@@ -776,6 +776,193 @@
             }
         });
     </script>
+
+<!-- Export functionality -->
+<style>
+.export-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.9em;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+.export-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+}
+.export-menu {
+    position: fixed;
+    bottom: 80px;
+    right: 20px;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 10px;
+    box-shadow: var(--shadow-lg);
+    display: none;
+    z-index: 1000;
+    min-width: 160px;
+}
+.export-menu.visible {
+    display: block;
+}
+.export-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 15px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.2s;
+    color: var(--text);
+}
+.export-option:hover {
+    background: var(--bg);
+}
+.export-option-icon {
+    font-size: 1.2em;
+}
+.export-floating-btn {
+    position: fixed;
+    bottom: 20px;
+    right: 80px;
+    z-index: 999;
+}
+</style>
+
+<div class="export-floating-btn">
+    <button class="export-btn" id="exportToggle">📤 Export</button>
+</div>
+
+<div class="export-menu" id="exportMenu">
+    <div class="export-option" onclick="exportArticles('json')">
+        <span class="export-option-icon">📋</span>
+        <span>Export as JSON</span>
+    </div>
+    <div class="export-option" onclick="exportArticles('csv')">
+        <span class="export-option-icon">📊</span>
+        <span>Export as CSV</span>
+    </div>
+    <div class="export-option" onclick="exportArticles('md')">
+        <span class="export-option-icon">📝</span>
+        <span>Export as Markdown</span>
+    </div>
+</div>
+
+<script>
+// Export functionality
+const exportToggle = document.getElementById('exportToggle');
+const exportMenu = document.getElementById('exportMenu');
+
+exportToggle.addEventListener('click', (e) => {
+    e.stopPropagation();
+    exportMenu.classList.toggle('visible');
+});
+
+document.addEventListener('click', (e) => {
+    if (!exportMenu.contains(e.target) && e.target !== exportToggle) {
+        exportMenu.classList.remove('visible');
+    }
+});
+
+function collectArticles() {
+    const articles = [];
+    document.querySelectorAll('.article-card').forEach(card => {
+        const title = card.dataset.title;
+        const tags = card.dataset.tags;
+        const excerpt = card.querySelector('.article-excerpt')?.textContent || '';
+        const link = card.querySelector('h2 a')?.getAttribute('href') || '';
+        const date = card.querySelector('time')?.textContent || '';
+        const tag = card.querySelector('.article-tag')?.textContent || '';
+        
+        articles.push({ title, tags, excerpt, link, date, tag });
+    });
+    return articles;
+}
+
+function exportArticles(format) {
+    const articles = collectArticles();
+    const timestamp = new Date().toISOString().split('T')[0];
+    let content, mimeType, filename;
+    
+    switch(format) {
+        case 'json':
+            content = JSON.stringify({ 
+                exportedAt: new Date().toISOString(), 
+                source: 'AI Automation Weekly',
+                totalArticles: articles.length,
+                articles 
+            }, null, 2);
+            mimeType = 'application/json';
+            filename = `ai-automation-articles-${timestamp}.json`;
+            break;
+            
+        case 'csv':
+            const headers = ['Title', 'Tags', 'Excerpt', 'Link', 'Date', 'Tag'];
+            const csvRows = articles.map(a => [
+                `"${a.title.replace(/"/g, '""')}"`,
+                `"${a.tags.replace(/"/g, '""')}"`,
+                `"${a.excerpt.replace(/"/g, '""').substring(0, 200)}${a.excerpt.length > 200 ? '...' : ''}"`,
+                `"${a.link}"`,
+                `"${a.date}"`,
+                `"${a.tag}"`
+            ].join(','));
+            content = [headers.join(','), ...csvRows].join('\n');
+            mimeType = 'text/csv';
+            filename = `ai-automation-articles-${timestamp}.csv`;
+            break;
+            
+        case 'md':
+            const mdLines = [
+                '# AI Automation Weekly - Article Export',
+                `\nExported: ${new Date().toLocaleString()}`,
+                `Total Articles: ${articles.length}\n`,
+                '---\n'
+            ];
+            articles.forEach(a => {
+                mdLines.push(`## ${a.title}`);
+                mdLines.push(`\n**Date:** ${a.date} | **Tag:** ${a.tag}`);
+                mdLines.push(`\n**Tags:** ${a.tags}`);
+                mdLines.push(`\n${a.excerpt}`);
+                mdLines.push(`\n[Read full article](${a.link})\n`);
+                mdLines.push('---\n');
+            });
+            content = mdLines.join('\n');
+            mimeType = 'text/markdown';
+            filename = `ai-automation-articles-${timestamp}.md`;
+            break;
+    }
+    
+    // Download file
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    // Hide menu and show success
+    exportMenu.classList.remove('visible');
+    showToast(`Exported ${articles.length} articles as ${format.toUpperCase()}!`, 'success');
+    
+    // Track export stats
+    const exportStats = JSON.parse(localStorage.getItem('export-stats') || '{}');
+    exportStats[format] = (exportStats[format] || 0) + 1;
+    exportStats.lastExport = new Date().toISOString();
+    localStorage.setItem('export-stats', JSON.stringify(exportStats));
+}
+</script>
+
 </body>
 </html>
 <script>
