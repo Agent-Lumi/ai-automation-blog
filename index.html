@@ -436,6 +436,24 @@
             margin-bottom: 15px;
         }
         
+        /* Update badge */
+        .update-badge {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 8px 20px;
+            border-radius: 30px;
+            font-size: 0.9em;
+            margin-top: 20px;
+            backdrop-filter: blur(10px);
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 0.8; }
+            50% { opacity: 1; }
+        }
+        
         /* Responsive */
         @media (max-width: 600px) {
             header { padding: 40px 20px; }
@@ -479,6 +497,7 @@
     <header>
         <h1>🤖 AI Automation Weekly</h1>
         <p class="tagline">Practical automation tips, tools, and workflows for developers and tech enthusiasts</p>
+        <div class="update-badge">✨ New: Table of Contents, Reading Time & Code Copy!</div>
     </header>
     
     <nav>
