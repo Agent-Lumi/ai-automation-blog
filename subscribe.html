@@ -216,3 +216,26 @@ function importFile(callback, accept = '.json') {
     input.click();
 }
 </script>
+<script>
+// API integration example
+const API = {
+    async fetchData(url, options = {}) {
+        try {
+            const response = await fetch(url, options);
+            if (!response.ok) throw new Error('API request failed');
+            return await response.json();
+        } catch (error) {
+            console.error('API Error:', error);
+            return null;
+        }
+    },
+    
+    async postData(url, data) {
+        return this.fetchData(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+    }
+};
+</script>
